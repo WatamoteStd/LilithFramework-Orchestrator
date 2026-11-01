@@ -1,5 +1,6 @@
 
 using System.Collections.Concurrent;
+using Orchestrator.Utils;
 
 namespace Core;
 
@@ -32,6 +33,7 @@ public class PortManager
             {
                 port = _ports[i].Port;
                 _ports[i].IsBusy = true;
+                _ports[i].UsePort();
                 return true;
             }
 
@@ -54,18 +56,26 @@ public class PortManager
 
     }
 
-    public void ShowPortInfo()
+    public void ShowPortInfo(bool onlyUsed = true)
     {
-        
-        Console.WriteLine($"[Port Manager] Total port count: {_ports.Length}");
 
-        for (int i = 0; i < _ports.Length; i++)
+        if(onlyUsed)
         {
-            
-            Console.WriteLine($"= Port:{_ports[i].Port} | IsBusy:{_ports[i].IsBusy} =");
-
+            Log.Info("Active Ports Info", "Port Manager");
+            for (int i = 0; i < _ports.Length; i++)
+            {
+                if(_ports[i].Info() == 0) continue;
+                Console.WriteLine($"> Port:{_ports[i].Port} | TimesUsed:{_ports[i].Info()} <");
+            }
         }
-
+        else
+        {
+            Log.Info("Ports Info", "Port Manager");
+            for (int i = 0; i < _ports.Length; i++)
+            {
+                Console.WriteLine($"> Port:{_ports[i].Port} | IsBusy:{_ports[i].IsBusy} <");
+            }
+        }
     }
 
 }
