@@ -21,18 +21,21 @@ public class ProcessWorker
     private readonly FrozenDictionary<InstanceTypes, string> _instanceToPath = FrozenDictionary<InstanceTypes, string>.Empty;
 
 
-    public ProcessWorker(bool showCheck = true)
+    public ProcessWorker(Dictionary<InstanceTypes, string> instancesDic, bool showCheck = true)
     {
         
-        var originDic = SettingsFinder.FindDefaulthInstancesPaths();
-        if(originDic.Count == 0)
+        if(instancesDic.Count == 0)
         {
             Log.Error("Can't find any executable file.", "Process Worker");
             return;
         }
-        CheckAvaliblity(originDic, showCheck);
-        _instanceToPath = originDic.ToFrozenDictionary();
+        CheckAvaliblity(instancesDic, showCheck);
+        _instanceToPath = instancesDic.ToFrozenDictionary();
 
+    }
+    public ProcessWorker(bool showCheck = true) : this(SettingsFinder.FindDefaulthInstancesPaths(), showCheck)
+    {
+        
     }
 
     private void CheckAvaliblity(Dictionary<InstanceTypes, string> originDic, bool showCheck)

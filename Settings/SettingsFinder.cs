@@ -71,6 +71,21 @@ public static class SettingsFinder
 
     }
 
+    public static void SaveMobaPath(string path)
+    {
+        
+        var file = FindConfigFilePath("orchestrator_instances.json");
+        if(file is null)
+        {
+            Log.Error($"Can't write new path to config, invalid configuration file", "Error");
+            return;
+        }
+        InstancesPaths newPaths = new InstancesPaths { MobaServer = path };
+        var json = JsonSerializer.Serialize(newPaths, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(file, json);
+
+    }
+
 
 
     // FOR DIRECTORY SEARCH
