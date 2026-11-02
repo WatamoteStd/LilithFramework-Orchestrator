@@ -14,29 +14,28 @@ public static class SettingsFinder
     {
         stSet = _basicStartupSettings;
 
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        var filePath = FindConfigFilePath("orchestrator.json");
 
-        while(dir != null && !Directory.Exists(Path.Combine(dir.FullName, "configs")))
-        {
-            dir = dir.Parent;
-        }
-
-        if (dir == null) throw new DirectoryNotFoundException("config folder not found. Check the path.");
-        var configDir = Path.Combine(dir.FullName, "configs", "editor");
-        var filePath = Path.Combine(configDir, "orchestrator.json");
-
-        if(!File.Exists(filePath))
+        if(filePath == null)
         {
             Log.Warning("Not found config file, using base params.", "SettingsFinder | Startup");
             return false;
         }
 
         var text = File.ReadAllText(filePath);
-        Log.Info("Finded settings file.", "SettingFinder| Startup");
-        stSet = JsonSerializer.Deserialize<StartupSettings>(text);
+        Log.Info("Found settings file.", "SettingFinder| Startup");
         
-        return true;
-
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<StartupSettings>(text);
+            stSet = parsed;
+            return true;
+        }
+        catch(JsonException e)
+        {
+            Log.Error($"Failed to parse config: {e.Message}", "SettingsFinder | Startup");
+            return false;
+        }
 
     }
 
@@ -45,28 +44,63 @@ public static class SettingsFinder
 
         Dictionary<InstanceTypes, string> origin = new Dictionary<InstanceTypes, string>();
 
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "configs")))
+        var filePath = FindConfigFilePath("orchestrator_instances.json");
+        if(filePath == null)
         {
-            dir = dir.Parent;
-        }
-
-        if (dir == null) throw new DirectoryNotFoundException("config folder not found. Check the path.");
-        var configDir = Path.Combine(dir.FullName, "configs", "editor");
-        var filePath = Path.Combine(configDir, "orchestrator_instances.json");
-
-        if (!File.Exists(filePath))
-        {
-            Log.Error("Not found any instance path.", "Settings Finder");
+            Log.Error("Not found config file, can't execute any instance if use no reserve root.", "SettingsFinder | InsatancePaths");
             return origin;
         }
 
         var text = File.ReadAllText(filePath);
-        var json = JsonSerializer.Deserialize<InstancesPaths>(text);
 
-        origin.Add(InstanceTypes.Moba, json.MobaServer);
+        try
+        {
+            
+            var parsed = JsonSerializer.Deserialize<InstancesPaths>(text);
+            origin.Add(InstanceTypes.Moba, parsed.MobaServer);
 
+        }
+        catch(JsonException e)
+        {
+            
+            Log.Error($"Failed to parse config: {e.Message}", "SettingsFinder | Startup");
+            return origin;
+
+        }
         return origin;
+
+    }
+
+
+
+    // FOR DIRECTORY SEARCH
+    private static string? FindProjectRoot()
+    {
+        
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while(dir != null)
+        {
+            
+            if(Directory.Exists(Path.Combine(dir.FullName, "configs"))) return dir.FullName;
+
+            dir = dir.Parent;
+
+        }
+
+        return null;
+
+    }
+
+    private static string? FindConfigFilePath(string fileName)
+    {
+        
+        var root = FindProjectRoot();
+        if(root == null) return null;
+
+        var configDir = Path.Combine(root, "configs", "editor");
+        var fullPath = Path.Combine(configDir, fileName);
+
+        return File.Exists(fullPath) ? fullPath : null;
 
     }
 
