@@ -1,6 +1,6 @@
 
 using System.Text.Json;
-using Core;
+using Orchestrator.Core;
 using Orchestrator.Utils;
 
 namespace Orchestrator.Settings;
@@ -9,11 +9,11 @@ public static class SettingsFinder
 {
 
     private static readonly StartupSettings _basicStartupSettings = new StartupSettings(15, 28765, true, 177, 10);
-    
+
     public static bool TryFindStartup(out StartupSettings stSet)
     {
         stSet = _basicStartupSettings;
-        
+
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
 
         while(dir != null && !Directory.Exists(Path.Combine(dir.FullName, "configs")))
@@ -34,18 +34,19 @@ public static class SettingsFinder
         var text = File.ReadAllText(filePath);
         Log.Info("Finded settings file.", "SettingFinder| Startup");
         stSet = JsonSerializer.Deserialize<StartupSettings>(text);
-        return true;
         
+        return true;
+
 
     }
 
     public static Dictionary<InstanceTypes, string> FindDefaulthInstancesPaths()
     {
-        
+
         Dictionary<InstanceTypes, string> origin = new Dictionary<InstanceTypes, string>();
 
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while(dir != null && !Directory.Exists(Path.Combine(dir.FullName, "configs")))
+        while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "configs")))
         {
             dir = dir.Parent;
         }
@@ -54,7 +55,7 @@ public static class SettingsFinder
         var configDir = Path.Combine(dir.FullName, "configs", "editor");
         var filePath = Path.Combine(configDir, "orchestrator_instances.json");
 
-        if(!File.Exists(filePath))
+        if (!File.Exists(filePath))
         {
             Log.Error("Not found any instance path.", "Settings Finder");
             return origin;

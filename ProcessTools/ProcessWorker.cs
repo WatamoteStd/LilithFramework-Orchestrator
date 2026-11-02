@@ -1,10 +1,11 @@
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Diagnostics;
-using Core;
+using Orchestrator.Core;
 using Orchestrator.Settings;
 using Orchestrator.Utils;
 
-namespace ProcessTools;
+namespace Orchestrator.ProcessTools;
 
 public class ProcessWorker
 {
@@ -16,7 +17,7 @@ public class ProcessWorker
 
     }
 
-    private readonly Dictionary<ushort, Process> _portToProcess = new();
+    private readonly ConcurrentDictionary<ushort, Process> _portToProcess = new();
     private readonly FrozenDictionary<InstanceTypes, string> _instanceToPath = FrozenDictionary<InstanceTypes, string>.Empty;
 
 
@@ -70,9 +71,17 @@ public class ProcessWorker
 
     }
 
+    private bool CheckAvaliblity(InstanceTypes instance) => _instanceToPath.ContainsKey(instance);
+
     public void ExecuteInstance(InstanceTypes instanceType, LaunchMode mode, ushort port)
     {
         
+        if(!CheckAvaliblity(instanceType))
+        {
+            Log.Error($"Can't start process for instance:{instanceType.ToString()}", "ProcessWorker | ExecuteInstance");
+            return;
+        }
+
         ProcessStartInfo startInfo = new ProcessStartInfo();
         startInfo.UseShellExecute = false;
         startInfo.FileName = _instanceToPath[instanceType];
@@ -105,7 +114,7 @@ public class ProcessWorker
         process.Exited += (sender, args) =>
         {
             
-            _portToProcess.Remove(port);
+            _portToProcess.TryRemove(port, out _);
 
 
         };

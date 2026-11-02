@@ -8,6 +8,7 @@ public class PortManager
 {
     
     private PortInfo[] _ports;
+    private readonly object _locker = new();
 
     public PortManager(int count, int firstIndex)
     {
@@ -25,35 +26,45 @@ public class PortManager
     public bool TryGetPort(out ushort port)
     {
         port = 0;
-        
-        for(int i = 0; i < _ports.Length; i++)
+
+        lock(_locker)
         {
             
-            if (!_ports[i].IsBusy)
+            for(int i = 0; i < _ports.Length; i++)
             {
-                port = _ports[i].Port;
-                _ports[i].IsBusy = true;
-                _ports[i].UsePort();
-                return true;
+            
+                if (!_ports[i].IsBusy)
+                {
+                    port = _ports[i].Port;
+                    _ports[i].IsBusy = true;
+                    _ports[i].UsePort();
+                    return true;
+                }
+
             }
+            return false;
 
         }
-        return false;
 
     }
 
     public void ReleasePort(ushort port)
     {
-        
-        for(int i = 0; i < _ports.Length; i++)
-        {
-            if (_ports[i].Port == port)
-            {
-                _ports[i].IsBusy = false;
-                return;
-            }
-        }
 
+        lock(_locker)
+        {
+            
+            for(int i = 0; i < _ports.Length; i++)
+            {
+                if (_ports[i].Port == port)
+                {
+                    _ports[i].IsBusy = false;
+                    return;
+                }
+            }
+
+        }
+    
     }
 
     public void ShowPortInfo(bool onlyUsed = true)

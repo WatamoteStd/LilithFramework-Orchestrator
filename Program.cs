@@ -2,7 +2,7 @@
 using Core;
 using Orchestrator.Settings;
 using Orchestrator.Utils;
-using ProcessTools;
+using Orchestrator.ProcessTools;
 
 
 
@@ -19,36 +19,6 @@ PortManager portManager = new PortManager(stSet.PortCount, stSet.StartPort);
 ProcessWorker processWorker = new ProcessWorker();
 
 
-_ = Task.Run(async () =>
-{
-    
-    while(true)
-    {
-        
-        await Task.Delay(5000);
-
-        if(portManager.TryGetPort(out ushort port))
-        {
-            try
-            {
-                processWorker.ExecuteInstance(InstanceTypes.Moba, ProcessWorker.LaunchMode.Hiden, port);
-            }
-            catch (Exception e)
-            {
-                Log.Warning($"Can't execute instance. Error:{e.Message}", "Process Worker");
-                portManager.ReleasePort(port);
-            }
-        }
-        else
-        {
-            Log.Error($"No free ports, can't execute new instances.", "Port Manager");
-            portManager.ShowPortInfo(false);
-
-        }
-
-    }
-
-});
 
 
 Console.ReadKey();
