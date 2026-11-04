@@ -6,4 +6,9 @@ namespace Orchestrator.ProcessTools.Memory;
 public readonly struct MemorySnapshot
 {
     public readonly ushort MemoryUsageMB;
+    public MemorySnapshot(ushort memoryUsageMb)
+    {
+        MemoryUsageMB = memoryUsageMb;
+    }
+
 }
