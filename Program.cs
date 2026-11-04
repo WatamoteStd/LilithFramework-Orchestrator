@@ -1,9 +1,8 @@
-﻿using System.Threading.Channels;
-using Core;
+﻿using Orchestrator.Core;
 using Orchestrator.Settings;
 using Orchestrator.Utils;
 using Orchestrator.ProcessTools;
-using System.Text.Json;
+using Orchestrator.ProcessTools.Memory;
 
 
 
@@ -68,9 +67,15 @@ Log.Info($"Memory Drop Value {stSet.MemoryDropValue} mb", "Start Info");
 Log.Info($"Packet For Push {stSet.PacketsForPush}", "Start Info");
 
 PortManager portManager = new PortManager(stSet.PortCount, stSet.StartPort);
-
 ProcessWorker processWorker = new ProcessWorker();
 
+using(MemoryAnalyzer memoryAnalyzer = new MemoryAnalyzer(stSet.PortCount, stSet.MemoryDropValue,
+    stSet.MemoryLeakDrop, MemoryAnalyzerMods.Balanced, 64000, stSet.StartPort))
+{
+    
+    
+
+}
 
 
 

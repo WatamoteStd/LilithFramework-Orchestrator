@@ -1,5 +1,5 @@
 
-namespace Core;
+namespace Orchestrator.Core;
 
 public struct PortInfo
 {

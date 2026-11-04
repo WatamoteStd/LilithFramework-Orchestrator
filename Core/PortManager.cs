@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using Orchestrator.Utils;
 
-namespace Core;
+namespace Orchestrator.Core;
 
 public class PortManager
 {
