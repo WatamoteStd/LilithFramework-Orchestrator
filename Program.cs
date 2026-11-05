@@ -69,11 +69,42 @@ Log.Info($"Packet For Push {stSet.PacketsForPush}", "Start Info");
 PortManager portManager = new PortManager(stSet.PortCount, stSet.StartPort);
 ProcessWorker processWorker = new ProcessWorker();
 
+portManager.TryGetPort(out ushort port);
+processWorker.ExecuteInstance(InstanceTypes.Moba, ProcessWorker.LaunchMode.Windowed, port);
+
+portManager.TryGetPort(out ushort port2);
+processWorker.ExecuteInstance(InstanceTypes.Moba, ProcessWorker.LaunchMode.Windowed, port2);
+
+var cts = new CancellationTokenSource();
+
 using(MemoryAnalyzer memoryAnalyzer = new MemoryAnalyzer(stSet.PortCount, stSet.MemoryDropValue,
     stSet.MemoryLeakDrop, MemoryAnalyzerMods.Balanced, 64000, stSet.StartPort))
 {
     
-    
+    memoryAnalyzer.OnPortProcessKilled += (port) =>
+    {
+        
+        portManager.ReleasePort(port);
+        processWorker.KillProcess(port);
+
+    };
+
+    _ = Task.Run(async () =>
+    {
+        
+        while(!cts.Token.IsCancellationRequested)
+        {
+        
+            memoryAnalyzer.AnalyzeInstances(processWorker.GetActiveProcesses());
+            await Task.Delay(2000, cts.Token);
+
+        }
+
+
+    });
+
+    Console.ReadKey();
+    cts.Cancel();
 
 }
 

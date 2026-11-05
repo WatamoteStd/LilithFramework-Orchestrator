@@ -73,6 +73,7 @@ public class ProcessWorker
 
 
     }
+    public IEnumerable<KeyValuePair<ushort, Process>> GetActiveProcesses() => _portToProcess;
 
     private bool CheckAvaliblity(InstanceTypes instance) => _instanceToPath.ContainsKey(instance);
 
@@ -118,12 +119,22 @@ public class ProcessWorker
         {
             
             _portToProcess.TryRemove(port, out _);
-
+            Log.Success($"Closed instance at PORT: {port}", "ProcessWorker | Exited");
 
         };
 
         Log.Success($"Started new instance at port: {port}", "ProcessWorker | Execute");
 
+
+    }
+
+    public void KillProcess(ushort port)
+    {
+        
+        if(_portToProcess.TryGetValue(port, out var process))
+        {
+            process.Kill();
+        }
 
     }
 

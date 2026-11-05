@@ -22,12 +22,12 @@ public unsafe class MemoryAnalyzer : IDisposable, IMemoryAnalyzer
     private readonly ushort _perPortMemoryBytes;
     private readonly byte _warmupIterations;
 
-    public const ushort ABSOLUTE_MEMORY_LIMIT_MB = 4096; 
+    public const ushort ABSOLUTE_MEMORY_LIMIT_MB = 2048; 
 
     private readonly object _locker = new();
 
     // UNSAFE
-    private readonly byte* _memoryPtr;
+    private byte* _memoryPtr;
     private readonly ushort PER_PORT_SNAPSHOT_COUNT; 
     private readonly ushort[] _writeIndices;
     private readonly int[] _currentPids; // unique ids for process tracking
@@ -153,7 +153,7 @@ public unsafe class MemoryAnalyzer : IDisposable, IMemoryAnalyzer
             }
 
             pair.Value.Refresh();
-            long rawMemorySize = pair.Value.PrivateMemorySize64 / 1024 / 1024;
+            long rawMemorySize = pair.Value.WorkingSet64 / 1024 / 1024;
             ushort mb = (ushort)Math.Min(rawMemorySize, ushort.MaxValue);
 
             Write(pair.Key, new MemorySnapshot(mb));
@@ -169,7 +169,7 @@ public unsafe class MemoryAnalyzer : IDisposable, IMemoryAnalyzer
 
         if(currentMb > ABSOLUTE_MEMORY_LIMIT_MB)
         {
-            Log.Error($"Killing PORT:{port}. Memory {currentMb}MB > Absolute Limit.", "MemoryAnalyzer");
+            Log.Error($"Killing PORT:{port}. Memory {currentMb}MB > Absolute Limit ({ABSOLUTE_MEMORY_LIMIT_MB} MB)", "MemoryAnalyzer");
             Clear(port);
             OnPortProcessKilled?.Invoke(port);
             return; 
@@ -209,7 +209,7 @@ public unsafe class MemoryAnalyzer : IDisposable, IMemoryAnalyzer
             ref byte viol = ref _violations[portIndex];
             viol++;
             
-            switch(_workMode)
+            switch(_workMode) // ISSUE #6 => Rewrite from count to Time interval
             {
             
                 case MemoryAnalyzerMods.Monitor:
@@ -227,9 +227,15 @@ public unsafe class MemoryAnalyzer : IDisposable, IMemoryAnalyzer
 
                         if(viol == 10)
                         {
-                            // todo kill process
-                            Log.Error($"Instance on PORT:{port} was killed.", "MemoryAnalyzer");
-                            Clear(port);
+                            
+                            if(CanDrop)
+                            {
+                                OnPortProcessKilled?.Invoke(port);
+                                Log.Error($"Instance on PORT:{port} was killed.", "MemoryAnalyzer");
+                                Clear(port);
+                                return;
+                            }
+                            Log.Error($"Instance on PORT:{port} have memory leak, autodrop disabled", "Memorynalyzer");
 
                         }
                         else if(viol == 7)
@@ -258,14 +264,24 @@ public unsafe class MemoryAnalyzer : IDisposable, IMemoryAnalyzer
     }
 
 
+    // Don't using any bool, bcs there is no managed List, Dictionary or smt.
+
     public void Dispose()
     {
         
         if(_memoryPtr != null)
         {
             NativeMemory.Free(_memoryPtr);
+            _memoryPtr = null;
+            OnPortProcessKilled = null;
         }
+        GC.SuppressFinalize(this);
 
+    }
+
+    ~MemoryAnalyzer() 
+    {
+        Dispose();
     }
 
     
