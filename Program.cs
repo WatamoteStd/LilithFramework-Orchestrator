@@ -101,13 +101,27 @@ using(MemoryAnalyzer memoryAnalyzer = new MemoryAnalyzer(stSet.PortCount, stSet.
 
     });
 
-    Console.ReadKey();
+    
+    while(true)
+    {
+        
+        var keyInfo = Console.ReadKey(intercept: true);
+        if(keyInfo.Key == ConsoleKey.Q) break;
+
+    }
+
     cts.Cancel();
+
+    Thread.Sleep(100); 
+    
+    processWorker.KillAll();
+    portManager.ReleaseAll();
+    Log.Info("Orchestrator shut down gracefully.", "System");
 
 }
 
 
-
+Console.WriteLine("Press any key to exit...");
 Console.ReadKey();
 
 

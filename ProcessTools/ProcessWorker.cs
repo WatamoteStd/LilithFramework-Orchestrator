@@ -137,4 +137,31 @@ public class ProcessWorker
 
     }
 
+    /// <summary>
+    /// Kill all instances
+    /// </summary>
+    public void KillAll()
+    {
+        
+        foreach(var pair in _portToProcess)
+        {
+            
+            try
+            {
+                if(!pair.Value.HasExited)
+                {
+                    pair.Value.Kill();
+                }
+            }
+            catch
+            {
+                
+            }
+
+        }
+        _portToProcess.Clear();
+        Log.Warning("All instances killed.", "ProcessWorker | KillAll");
+
+    }
+
 }

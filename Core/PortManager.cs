@@ -89,4 +89,19 @@ public class PortManager
         }
     }
 
+    public void ReleaseAll()
+    {
+        
+        lock(_locker)
+        {
+            for(int i = 0; i < _ports.Length; i++)
+            {
+                
+                _ports[i].IsBusy = false;
+
+            }
+        }
+
+    }
+
 }
