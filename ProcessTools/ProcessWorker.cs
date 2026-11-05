@@ -12,9 +12,7 @@ public class ProcessWorker
 
     public enum LaunchMode : byte
     {
-        Windowed = 0,
-        Hiden = 1
-
+        Hiden = 0
     }
 
     private readonly ConcurrentDictionary<ushort, Process> _portToProcess = new();
@@ -88,26 +86,13 @@ public class ProcessWorker
 
         ProcessStartInfo startInfo = new ProcessStartInfo();
         startInfo.UseShellExecute = false;
+        startInfo.CreateNoWindow = true;
         startInfo.FileName = _instanceToPath[instanceType];
         startInfo.WorkingDirectory = Path.GetDirectoryName(_instanceToPath[instanceType]);
         startInfo.Environment["SERVER_PORT"] = port.ToString();
 
-        switch(mode)
-        {
-            
-            case LaunchMode.Windowed:
-                {
-                    startInfo.CreateNoWindow = false;
-                }
-            break;
-
-            case LaunchMode.Hiden:
-                {
-                    startInfo.CreateNoWindow = true;
-                }
-            break;
-
-        }
+        startInfo.RedirectStandardOutput = true;
+        startInfo.RedirectStandardError = true;
 
         var process = Process.Start(startInfo);
         if (process == null) return;
@@ -123,6 +108,20 @@ public class ProcessWorker
 
         };
 
+        process.OutputDataReceived += (sender, e) =>
+        {
+            if(!string.IsNullOrEmpty(e.Data))
+                Log.ServerOutput(e.Data, $"PORT:{port}");
+        };
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if(!string.IsNullOrEmpty(e.Data))
+                Log.ServerOutput(e.Data, $"PORT:{port}");
+        };
+
+        process.BeginErrorReadLine();
+        process.BeginOutputReadLine();
+
         Log.Success($"Started new instance at port: {port}", "ProcessWorker | Execute");
 
 
@@ -133,7 +132,7 @@ public class ProcessWorker
         
         if(_portToProcess.TryGetValue(port, out var process))
         {
-            process.Kill();
+            process.Kill(true);
         }
 
     }

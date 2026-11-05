@@ -70,10 +70,8 @@ PortManager portManager = new PortManager(stSet.PortCount, stSet.StartPort);
 ProcessWorker processWorker = new ProcessWorker();
 
 portManager.TryGetPort(out ushort port);
-processWorker.ExecuteInstance(InstanceTypes.Moba, ProcessWorker.LaunchMode.Windowed, port);
+processWorker.ExecuteInstance(InstanceTypes.Moba, ProcessWorker.LaunchMode.Hiden, port);
 
-portManager.TryGetPort(out ushort port2);
-processWorker.ExecuteInstance(InstanceTypes.Moba, ProcessWorker.LaunchMode.Windowed, port2);
 
 var cts = new CancellationTokenSource();
 

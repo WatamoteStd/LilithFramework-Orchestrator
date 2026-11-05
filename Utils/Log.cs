@@ -9,6 +9,7 @@ public static class Log
     public static void Warning(string message, string sender = null!) => Print(message, ConsoleColor.Yellow, sender);
     public static void Error(string message, string sender = null!) => Print(message, ConsoleColor.Red, sender);
     public static void Dialog(string message, string sender = null!) => Print(message, ConsoleColor.DarkMagenta, sender);
+    public static void ServerOutput(string message, string sender = null!) => Print(message, ConsoleColor.Blue, sender);
 
     private static void Print(string message, ConsoleColor color, string sender)
     {
