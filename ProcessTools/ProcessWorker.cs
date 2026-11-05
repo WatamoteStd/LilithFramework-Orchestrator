@@ -12,9 +12,7 @@ public class ProcessWorker
 
     public enum LaunchMode : byte
     {
-        Windowed = 0,
-        Hiden = 1
-
+        Hiden = 0
     }
 
     private readonly ConcurrentDictionary<ushort, Process> _portToProcess = new();
@@ -73,6 +71,7 @@ public class ProcessWorker
 
 
     }
+    public IEnumerable<KeyValuePair<ushort, Process>> GetActiveProcesses() => _portToProcess;
 
     private bool CheckAvaliblity(InstanceTypes instance) => _instanceToPath.ContainsKey(instance);
 
@@ -87,26 +86,13 @@ public class ProcessWorker
 
         ProcessStartInfo startInfo = new ProcessStartInfo();
         startInfo.UseShellExecute = false;
+        startInfo.CreateNoWindow = true;
         startInfo.FileName = _instanceToPath[instanceType];
         startInfo.WorkingDirectory = Path.GetDirectoryName(_instanceToPath[instanceType]);
         startInfo.Environment["SERVER_PORT"] = port.ToString();
 
-        switch(mode)
-        {
-            
-            case LaunchMode.Windowed:
-                {
-                    startInfo.CreateNoWindow = false;
-                }
-            break;
-
-            case LaunchMode.Hiden:
-                {
-                    startInfo.CreateNoWindow = true;
-                }
-            break;
-
-        }
+        startInfo.RedirectStandardOutput = true;
+        startInfo.RedirectStandardError = true;
 
         var process = Process.Start(startInfo);
         if (process == null) return;
@@ -118,12 +104,63 @@ public class ProcessWorker
         {
             
             _portToProcess.TryRemove(port, out _);
-
+            Log.Success($"Closed instance at PORT: {port}", "ProcessWorker | Exited");
 
         };
 
+        process.OutputDataReceived += (sender, e) =>
+        {
+            if(!string.IsNullOrEmpty(e.Data))
+                Log.ServerOutput(e.Data, $"PORT:{port}");
+        };
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if(!string.IsNullOrEmpty(e.Data))
+                Log.ServerOutput(e.Data, $"PORT:{port}");
+        };
+
+        process.BeginErrorReadLine();
+        process.BeginOutputReadLine();
+
         Log.Success($"Started new instance at port: {port}", "ProcessWorker | Execute");
 
+
+    }
+
+    public void KillProcess(ushort port)
+    {
+        
+        if(_portToProcess.TryGetValue(port, out var process))
+        {
+            process.Kill(true);
+        }
+
+    }
+
+    /// <summary>
+    /// Kill all instances
+    /// </summary>
+    public void KillAll()
+    {
+        
+        foreach(var pair in _portToProcess)
+        {
+            
+            try
+            {
+                if(!pair.Value.HasExited)
+                {
+                    pair.Value.Kill();
+                }
+            }
+            catch
+            {
+                
+            }
+
+        }
+        _portToProcess.Clear();
+        Log.Warning("All instances killed.", "ProcessWorker | KillAll");
 
     }
 

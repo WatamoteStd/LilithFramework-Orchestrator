@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using Orchestrator.Utils;
 
-namespace Core;
+namespace Orchestrator.Core;
 
 public class PortManager
 {
@@ -87,6 +87,21 @@ public class PortManager
                 Console.WriteLine($"> Port:{_ports[i].Port} | IsBusy:{_ports[i].IsBusy} <");
             }
         }
+    }
+
+    public void ReleaseAll()
+    {
+        
+        lock(_locker)
+        {
+            for(int i = 0; i < _ports.Length; i++)
+            {
+                
+                _ports[i].IsBusy = false;
+
+            }
+        }
+
     }
 
 }

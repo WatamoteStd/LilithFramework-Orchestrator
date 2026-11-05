@@ -1,9 +1,8 @@
-﻿using System.Threading.Channels;
-using Core;
+﻿using Orchestrator.Core;
 using Orchestrator.Settings;
 using Orchestrator.Utils;
 using Orchestrator.ProcessTools;
-using System.Text.Json;
+using Orchestrator.ProcessTools.Memory;
 
 
 
@@ -68,12 +67,61 @@ Log.Info($"Memory Drop Value {stSet.MemoryDropValue} mb", "Start Info");
 Log.Info($"Packet For Push {stSet.PacketsForPush}", "Start Info");
 
 PortManager portManager = new PortManager(stSet.PortCount, stSet.StartPort);
-
 ProcessWorker processWorker = new ProcessWorker();
 
+portManager.TryGetPort(out ushort port);
+processWorker.ExecuteInstance(InstanceTypes.Moba, ProcessWorker.LaunchMode.Hiden, port);
 
 
+var cts = new CancellationTokenSource();
 
+using(MemoryAnalyzer memoryAnalyzer = new MemoryAnalyzer(stSet.PortCount, stSet.MemoryDropValue,
+    stSet.MemoryLeakDrop, MemoryAnalyzerMods.Balanced, 64000, stSet.StartPort))
+{
+    
+    memoryAnalyzer.OnPortProcessKilled += (port) =>
+    {
+        
+        portManager.ReleasePort(port);
+        processWorker.KillProcess(port);
+
+    };
+
+    _ = Task.Run(async () =>
+    {
+        
+        while(!cts.Token.IsCancellationRequested)
+        {
+        
+            memoryAnalyzer.AnalyzeInstances(processWorker.GetActiveProcesses());
+            await Task.Delay(2000, cts.Token);
+
+        }
+
+
+    });
+
+    
+    while(true)
+    {
+        
+        var keyInfo = Console.ReadKey(intercept: true);
+        if(keyInfo.Key == ConsoleKey.Q) break;
+
+    }
+
+    cts.Cancel();
+
+    Thread.Sleep(100); 
+    
+    processWorker.KillAll();
+    portManager.ReleaseAll();
+    Log.Info("Orchestrator shut down gracefully.", "System");
+
+}
+
+
+Console.WriteLine("Press any key to exit...");
 Console.ReadKey();
 
 
