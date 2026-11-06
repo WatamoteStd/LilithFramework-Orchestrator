@@ -3,6 +3,7 @@ using Orchestrator.Settings;
 using Orchestrator.Utils;
 using Orchestrator.ProcessTools;
 using Orchestrator.ProcessTools.Memory;
+using Telegram;
 
 
 
@@ -71,6 +72,7 @@ ProcessWorker processWorker = new ProcessWorker();
 
 portManager.TryGetPort(out ushort port);
 processWorker.ExecuteInstance(InstanceTypes.Moba, ProcessWorker.LaunchMode.Hiden, port);
+_ = TelegramNotifier.SendMessageAsync($"Started server on port:{port}");
 
 
 var cts = new CancellationTokenSource();
@@ -84,6 +86,7 @@ using(MemoryAnalyzer memoryAnalyzer = new MemoryAnalyzer(stSet.PortCount, stSet.
         
         portManager.ReleasePort(port);
         processWorker.KillProcess(port);
+        _ = TelegramNotifier.SendMessageAsync($"KilledServer on port:{port}");
 
     };
 
